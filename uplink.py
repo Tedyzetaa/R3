@@ -17,6 +17,7 @@ Estrutura de arquivos esperada:
 """
 
 import asyncio
+from http.server import BaseHTTPRequestHandler, HTTPServer
 import glob
 import os
 import sys
@@ -530,6 +531,29 @@ class R2Core:
 
     def iniciar(self):
         """Ponto de entrada. Cria o loop, sobe o uplink, entra no loop principal."""
+
+        # --- HACK PARA O RENDER: Servidor Web Fictício ---
+        def start_dummy_server():
+            class Handler(BaseHTTPRequestHandler):
+                def do_GET(self):
+                    self.send_response(200)
+                    self.end_headers()
+                    self.wfile.write(b"R2 Tactical OS - Uplink Online")
+                
+                # Silencia os logs do servidor HTTP para não poluir seu terminal
+                def log_message(self, format, *args):
+                    pass 
+
+            # O Render injeta dinamicamente a porta na variável de ambiente PORT
+            port = int(os.environ.get("PORT", 10000))
+            server = HTTPServer(("0.0.0.0", port), Handler)
+            threading.Thread(target=server.serve_forever, daemon=True).start()
+            print(f"✅ [WEB SERVER]: Servidor de Keep-Alive iniciado na porta {port}")
+
+        # Inicia a porta falsa para o Render aprovar o deploy
+        start_dummy_server()
+        # -------------------------------------------------
+
         print("=" * 55)
         print("🚀 R2 TACTICAL OS — INICIANDO SISTEMAS")
         print("=" * 55)
