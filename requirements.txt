@@ -1,21 +1,24 @@
-# --- Núcleo Web e API ---
-Flask>=3.0.0
-requests>=2.31.0
-python-dotenv>=1.0.1
+# ==========================================
+# R2 TACTICAL OS - UPLINK REQUIREMENTS
+# ==========================================
 
-# --- Inteligência Artificial e RAG ---
-openai>=1.12.0
-chromadb>=0.4.24
-langchain-text-splitters>=0.0.1
-pdfplumber>=0.11.0
-sentence-transformers>=2.2.2
-
-# --- Interface Telegram ---
+# --- Core (Comunicação e Variáveis) ---
 python-telegram-bot>=20.8
+python-dotenv>=1.0.1
+requests>=2.31.0
 
-# --- Módulos de Features (Identificados na estrutura) ---
-# Se algum módulo falhar, instale as dependências abaixo:
-opencv-python>=4.9.0      # Para o SentinelSystem (Câmaras/Imagens)
-moviepy>=1.0.3            # Para o VideoSurgeon (Edição de vídeo)
-# speedtest-cli>=2.1.3    # Para o NetSpeedModule
-# beautifulsoup4>=4.12.0  # Caso utilize scraping nos módulos de news
+# --- Web Scraping & APIs (Inteligência e Notícias) ---
+beautifulsoup4>=4.12.0
+lxml>=5.1.0
+
+# --- Processamento de Imagem e Vídeo (Sentinela e Tesoura Neural) ---
+# Usamos a versão 'headless' no Render para evitar erros de dependência gráfica (libGL) do Linux
+opencv-python-headless>=4.9.0
+moviepy>=2.2.1
+imageio>=2.37.0
+imageio-ffmpeg>=0.6.0
+Pillow>=10.2.0
+
+# --- Utilitários de Sistema (Status, Rede e Velocidade) ---
+psutil>=5.9.8
+speedtest-cli>=2.1.3
