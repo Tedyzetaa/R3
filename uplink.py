@@ -121,6 +121,12 @@ class R2Core:
         elif step == "aguardar_cidade_voos":   self._em_thread(self._run_voos,     user_id, texto)
         elif step == "aguardar_prompt_ia":     self._em_thread(self._run_ia_local, user_id, texto)
         elif step == "aguardar_url_video":     self._em_thread(self._run_video,    user_id, texto)
+        elif step == "aguardar_cidade_clima_video": self._em_thread(self._run_clima_video, user_id, texto)
+        # ── Consultas BR ──
+        elif step == "aguardar_cep":           self._em_thread(self._run_cep,  user_id, texto)
+        elif step == "aguardar_cnpj":          self._em_thread(self._run_cnpj, user_id, texto)
+        elif step == "aguardar_cpf":           self._em_thread(self._run_cpf,  user_id, texto)
+        elif step == "aguardar_bin":           self._em_thread(self._run_bin,  user_id, texto)
         else:
             self.enviar("❓ Fluxo expirado. Use /start para o menu.", user_id)
 
@@ -138,6 +144,11 @@ class R2Core:
             self.enviar("✈️ Digite a cidade para o radar (ou *Ivinhema* para a base):", user_id)
             return
 
+        if comando == "pedir_clima_video":
+            self.enviar("🎬 Mapeando o Hemisferio Sul...\n⏳ Essa operacao de fusao de dados exige muito processamento. Aguarde.", user_id)
+            threading.Thread(target=self._run_clima_video, args=(user_id,), daemon=True).start()
+            return
+
         if comando == "ia_local":
             self.user_states[user_id] = {"step": "aguardar_prompt_ia"}
             self.enviar("🤖 *IA LOCAL ATIVA* — Digite sua consulta:", user_id)
@@ -146,6 +157,27 @@ class R2Core:
         if comando == "video_viral":
             self.user_states[user_id] = {"step": "aguardar_url_video"}
             self.enviar("🎬 *TESOURA NEURAL* — Cole a URL do vídeo (YouTube/etc):", user_id)
+            return
+
+        # ── Consultas BR ────────────────────────────────────────────────────
+        if comando == "pedir_cep":
+            self.user_states[user_id] = {"step": "aguardar_cep"}
+            self.enviar("📮 *CONSULTA CEP* — Digite o CEP (8 dígitos, sem traço):", user_id)
+            return
+
+        if comando == "pedir_cnpj":
+            self.user_states[user_id] = {"step": "aguardar_cnpj"}
+            self.enviar("🏢 *CONSULTA CNPJ* — Digite o CNPJ (14 dígitos, sem pontuação):", user_id)
+            return
+
+        if comando == "pedir_cpf":
+            self.user_states[user_id] = {"step": "aguardar_cpf"}
+            self.enviar("🪪 *CONSULTA CPF* — Digite o CPF (11 dígitos, sem pontuação):", user_id)
+            return
+
+        if comando == "pedir_bin":
+            self.user_states[user_id] = {"step": "aguardar_bin"}
+            self.enviar("💳 *CONSULTA BIN* — Digite o BIN do cartão (6 primeiros dígitos):", user_id)
             return
 
         # ── Mapa de comandos → funções pesadas (rodam em thread) ──
@@ -264,6 +296,34 @@ class R2Core:
             self.enviar(resultado, user_id)
         except Exception as e:
             self.enviar(f"❌ Erro Clima: {e}", user_id)
+
+    # ── ⛈️ PREVISÃO COM VÍDEO (NOVO) ──────────────────────────────────────
+    def _run_clima_video(self, user_id: int):
+        """Gera vídeo animado da previsão do tempo para 48h com El Niño."""
+        try:
+            from features.weather_forecast_video import gerar_video_weather
+            api_key = os.getenv("OPENWEATHER_API_KEY", "")
+            if not api_key:
+                self.enviar("⚠️ Chave OPENWEATHER_API_KEY não configurada.", user_id)
+                return
+
+            # Chama a função sem pedir cidade
+            caminho, resumo, dados_eni = gerar_video_weather(api_key)
+
+            if caminho and os.path.exists(caminho):
+                self.enviar(resumo, user_id)
+                self.enviar_foto(caminho, "🎬 Previsão 48h — HEMISFÉRIO SUL", user_id)
+            else:
+                self.enviar("❌ Falha ao processar dados hemisféricos.", user_id)
+
+        except Exception as e:
+            import traceback
+            print("\n" + "="*50)
+            print("🔥 ERRO FATAL NO RENDERIZADOR DE VÍDEO:")
+            traceback.print_exc()  # Isso vai imprimir a linha exata do erro no terminal!
+            print("="*50 + "\n")
+            
+            self.enviar("❌ Erro crítico no motor geoespacial. Verifique o terminal do R2.", user_id)
 
     # ── ✈️ RADAR DE VOOS (requer cidade via estado) ──────────────────────────
     def _run_voos(self, user_id: int, cidade: str):
@@ -485,6 +545,36 @@ class R2Core:
             )
         except Exception as e:
             self.enviar(f"❌ Erro Quantum: {e}", user_id)
+
+    # ── 📮 CONSULTAS BR ──────────────────────────────────────────────────────
+
+    def _run_cep(self, user_id: int, cep: str):
+        try:
+            from features.consulta_br import consultar_cep
+            self.enviar(consultar_cep(cep), user_id)
+        except Exception as e:
+            self.enviar(f"❌ Erro CEP: {e}", user_id)
+
+    def _run_cnpj(self, user_id: int, cnpj: str):
+        try:
+            from features.consulta_br import consultar_cnpj
+            self.enviar(consultar_cnpj(cnpj), user_id)
+        except Exception as e:
+            self.enviar(f"❌ Erro CNPJ: {e}", user_id)
+
+    def _run_cpf(self, user_id: int, cpf: str):
+        try:
+            from features.consulta_br import consultar_cpf
+            self.enviar(consultar_cpf(cpf), user_id)
+        except Exception as e:
+            self.enviar(f"❌ Erro CPF: {e}", user_id)
+
+    def _run_bin(self, user_id: int, bin_num: str):
+        try:
+            from features.consulta_br import consultar_bin
+            self.enviar(consultar_bin(bin_num), user_id)
+        except Exception as e:
+            self.enviar(f"❌ Erro BIN: {e}", user_id)
 
     # ══════════════════════════════════════════════════════════════════════════
     # SEÇÃO 4 — UTILITÁRIOS

@@ -4,6 +4,7 @@ import threading
 from dotenv import load_dotenv
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler
+from features.geo_fusion import GeoFusionEngine
 
 # --- 1. CARREGAMENTO DE CREDENCIAIS (.ENV) ---
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -14,7 +15,7 @@ load_dotenv(env_path)
 TOKEN = os.getenv("TELEGRAM_TOKEN")
 
 # --- 2. PROTOCOLO DE SEGURANÇA ---
-AUTHORIZED_USERS = {8117345546, 8379481331, 8468494394}
+AUTHORIZED_USERS = {8117345546, 8379481331, 8468494394, 8576907275}
 
 
 class TelegramBotUplink:
@@ -23,6 +24,7 @@ class TelegramBotUplink:
         self.app        = None
         self.loop       = asyncio.new_event_loop()
         self.thread     = None
+        self.geo_fusion = GeoFusionEngine()
 
         if not TOKEN:
             print(f"❌ [ERRO CRÍTICO]: Token não encontrado em {env_path}")
@@ -50,6 +52,7 @@ class TelegramBotUplink:
             )
 
             self.app.add_handler(CommandHandler("start", self.start_command))
+            self.app.add_handler(CommandHandler("geofusion", self.cmd_geofusion))
             self.app.add_handler(CallbackQueryHandler(self.lidar_com_botoes))
             self.app.add_handler(
                 MessageHandler(filters.TEXT & ~filters.COMMAND, self.lidar_com_mensagem)
@@ -97,6 +100,10 @@ class TelegramBotUplink:
                 InlineKeyboardButton("✈️ RADAR DE VOOS",    callback_data="pedir_voos"),
                 InlineKeyboardButton("⛈️ CLIMA (CIDADE)",   callback_data="pedir_cidade"),
             ],
+            # ── NOVO: PREVISÃO EM VÍDEO ────────────────────────────────────
+            [
+                InlineKeyboardButton("🎬 PREVISÃO 48h (VÍDEO)", callback_data="pedir_clima_video")
+            ],
             # ── GEOPOLÍTICA ─────────────────────────────────────────────────
             [InlineKeyboardButton("☢️  DEFCON / GEOPOLÍTICA (PizzINT)", callback_data="defcon")],
             [
@@ -133,6 +140,15 @@ class TelegramBotUplink:
             [InlineKeyboardButton("🤖 IA LOCAL (Dolphin Uncensored)", callback_data="ia_local")],
             # ── STATUS ──────────────────────────────────────────────────────
             [InlineKeyboardButton("💻 STATUS DO SISTEMA (PC)", callback_data="status")],
+            # ── CONSULTAS BR ────────────────────────────────────────────────
+            [
+                InlineKeyboardButton("📮 CONSULTAR CEP",  callback_data="pedir_cep"),
+                InlineKeyboardButton("🏢 CONSULTAR CNPJ", callback_data="pedir_cnpj"),
+            ],
+            [
+                InlineKeyboardButton("🪪 CONSULTAR CPF",  callback_data="pedir_cpf"),
+                InlineKeyboardButton("💳 CONSULTAR BIN",  callback_data="pedir_bin"),
+            ],
         ]
 
         await update.message.reply_text(
@@ -142,6 +158,40 @@ class TelegramBotUplink:
             reply_markup=InlineKeyboardMarkup(keyboard),
             parse_mode="Markdown",
         )
+
+    async def cmd_geofusion(self, update: Update, context):
+        user_id = update.effective_user.id
+        if user_id not in AUTHORIZED_USERS:
+            await update.message.reply_text("⛔ Acesso negado. Protocolo de segurança ativo.")
+            return
+
+        mensagem_espera = await update.message.reply_text("🧬 `R2 executando algoritmos de fusão geoespacial...`", parse_mode="Markdown")
+
+        # MOCK DE DADOS: Em produção, você puxará esses dados das suas outras features
+        # ex: extrair os últimos dicionários de features/geo_seismic ou features/liveuamap_intel
+        dados_ambientais_ficticios = [
+            {"tipo": "Terremoto M5.1", "lat": 36.3, "lon": 68.1, "detalhe": "Profundidade 10km - Afeganistão"},
+            {"tipo": "Atividade Vulcânica", "lat": 35.3, "lon": 138.7, "detalhe": "Monte Fuji - Alerta Amarelo"}
+        ]
+        
+        dados_geopoliticos_ficticios = [
+            {"tipo": "Movimentação Militar", "lat": 36.7, "lon": 68.8, "detalhe": "Aumento de tropas na fronteira norte"},
+            {"tipo": "Bloqueio de Infraestrutura", "lat": 35.0, "lon": 139.0, "detalhe": "Exercício naval conjunto na costa"}
+        ]
+
+        # Executa a fusão sem travar o bot
+        relatorio, mapa_path = await self.geo_fusion.executar_fusao(
+            dados_ambientais_ficticios, 
+            dados_geopoliticos_ficticios, 
+            raio_km=200.0
+        )
+
+        # Atualiza a mensagem do operador com o relatório analítico
+        await mensagem_espera.edit_text(relatorio, parse_mode="Markdown")
+        
+        # Se você configurou o link público no Render, pode enviar o link direto para o operador abrir o mapa no celular!
+        # Exemplo: URL_REDE = os.getenv("RENDER_EXTERNAL_URL", "http://127.0.0.1:5000")
+        # await update.message.reply_text(f"🔗 Acesse o mapa tático online:\n{URL_REDE}/static/mapa_fusion.html")
 
     # ══════════════════════════════════════════════════════════════════════════
     # PROCESSADOR DE BOTÕES
