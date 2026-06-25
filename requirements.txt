@@ -4,6 +4,9 @@ requests>=2.31.0
 python-dotenv>=1.0.0
 asyncio>=3.4.3
 
+# --- Comunicação e Mensageria (Uplink Central) ---
+python-telegram-bot>=20.0
+
 # --- Inteligência Artificial e RAG ---
 openai>=1.0.0
 chromadb>=0.4.0
