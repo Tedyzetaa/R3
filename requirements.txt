@@ -4,25 +4,30 @@ requests>=2.31.0
 python-dotenv>=1.0.0
 asyncio>=3.4.3
 
-# --- Comunicação e Mensageria (Uplink Central) ---
+# --- Comunicação e Mensageria ---
 python-telegram-bot>=20.0
 
 # --- Inteligência Artificial e RAG ---
 openai>=1.0.0
 chromadb>=0.4.0
 
-# --- Análise de Dados e Fusão Geoespacial (GeoFusion / Quantum) ---
+# --- Análise de Dados e Fusão Geoespacial ---
 pandas>=2.0.0
 openpyxl>=3.1.0
+scipy>=1.10.0
 
-# --- Motor Gráfico, Mapas e Geração de Vídeo (Weather Video / Radar / Orbitas / Mapas) ---
+# --- Automação, Web Scraping e Coleta (DEFCON / Asteroides) ---
+playwright>=1.40.0
+beautifulsoup4>=4.12.0
+
+# --- Motor Gráfico, Mapas e Vídeo ---
 matplotlib>=3.7.0
 pillow>=10.0.0
 opencv-python>=4.8.0
 numpy>=1.24.0
 folium>=0.14.0
 
-# --- Redes, Hardware e Scanner de Sistema ---
+# --- Redes, Hardware e Scanner ---
 psutil>=5.9.0
 speedtest-cli>=2.1.3
 scapy>=2.5.0
